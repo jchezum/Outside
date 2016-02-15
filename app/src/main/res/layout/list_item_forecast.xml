@@ -4,7 +4,6 @@
     android:minHeight="?android:attr/listPreferredItemHeight"
     android:layout_alignParentLeft="true"
     android:gravity="center_vertical"
-    android:textAlignment="center"
     android:id="@+id/list_item_forecast_textview">
 
 </TextView>
