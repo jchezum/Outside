@@ -1,28 +1,14 @@
 package com.outside.jchez.outside;
 
-import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-public class DetailActivity extends AppCompatActivity {
+public class DetailActivity extends ActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,27 +35,23 @@ public class DetailActivity extends AppCompatActivity {
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent settingsActivityIntent = new Intent(this,SettingsActivity.class);
+            startActivity(settingsActivityIntent);
             return true;
         }
+//        if (id==R.id.menu_item_share){
+//
+//            return true;
+//        }
         return super.onOptionsItemSelected(item);
     }
 
-/*    public static class DetailFragment extends Fragment {
-        public DetailFragment(){}
-
-        public View OnCreateView(LayoutInflater inflater,ViewGroup container,
-                                 Bundle savedInstanceState){
-            View rootView = inflater.inflate(R.layout.fragment_detail, container, false);
-            Intent caller = getActivity().getIntent();
-
-            if (caller != null && caller.hasExtra(caller.EXTRA_TEXT)){
-                String forecastText = caller.getStringExtra(caller.EXTRA_TEXT);
-                ((TextView) rootView.findViewById(R.id.detail_text)).setText(forecastText);
-            }
-
-            return rootView;
-        }
-
-    }*/
+//    private void shareWeather () {
+//        Intent sendIntent = new Intent();
+//        sendIntent.setAction(Intent.ACTION_SEND);
+//        sendIntent.putExtra(Intent.EXTRA_TEXT, "This is my text to send.");
+//        sendIntent.setType("text/plain");
+//        startActivity(sendIntent);
+//    }
 
 }

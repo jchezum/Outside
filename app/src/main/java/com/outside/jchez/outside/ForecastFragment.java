@@ -2,9 +2,11 @@ package com.outside.jchez.outside;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -29,10 +31,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.lang.String;
+
 
 /**
  * Created by jchez on 2/4/2016.
@@ -61,8 +64,7 @@ public class ForecastFragment extends Fragment {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("94043");
+            updateWeather();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -71,27 +73,12 @@ public class ForecastFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Create some dummy data for the ListView.  Here's a sample weekly forecast
-        String[] data = {
-                "Mon 6/23 - Sunny - 31/17",
-                "Tue 6/24 - Foggy - 21/8",
-                "Wed 6/25 - Cloudy - 22/17",
-                "Thurs 6/26 - Rainy - 18/11",
-                "Fri 6/27 - Foggy - 21/10",
-                "Sat 6/28 - TRAPPED IN WEATHERSTATION - 23/18",
-                "Sun 6/29 - Sunny - 20/7"
-        };
-        List<String> weekForecast = new ArrayList<String>(Arrays.asList(data));
-
-        // Now that we have some dummy forecast data, create an ArrayAdapter.
-        // The ArrayAdapter will take data from a source (like our dummy forecast) and
-        // use it to populate the ListView it's attached to.
         mForecastAdapter =
                 new ArrayAdapter<String>(
                         getActivity(), // The current context (this activity)
                         R.layout.list_item_forecast, // The name of the layout ID.
                         R.id.list_item_forecast_textview, // The ID of the textview to populate.
-                        weekForecast);
+                        new ArrayList<String>());
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         // Get a reference to the ListView, and attach this adapter to it.
         ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
@@ -109,6 +96,20 @@ public class ForecastFragment extends Fragment {
         });
 
         return rootView;
+    }
+
+    private void updateWeather() {
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location=pref.getString(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
+        Log.v("UPDATE_WEATHER", "location: " + location);
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        weatherTask.execute(location);
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        updateWeather();
     }
 
     public class FetchWeatherTask extends AsyncTask<String,Void,String[]> {
@@ -242,7 +243,7 @@ public class ForecastFragment extends Fragment {
                 // Construct the URL for the OpenWeatherMap query
                 // params[] = (zip,units,days)
                 Uri uri = Uri.parse(BASE_URL).buildUpon()
-                        .appendQueryParameter(QUERY_PARAM, params[0])
+                        .appendQueryParameter(QUERY_PARAM, params[0]+",us")
                         .appendQueryParameter(APPID_PARAM, appid)
                         .appendQueryParameter(FORMAT_PARAM, mode)
                         .appendQueryParameter(UNITS_PARAM, units)
@@ -306,14 +307,41 @@ public class ForecastFragment extends Fragment {
             return null;
         }
 
+        private String convertMetricToImperial(String metricString){
+            String[] elements = metricString.split(" - ");
+            String [] temps = elements[2].replaceAll("\\s+","").split("/");
+            int highTemp=Integer.parseInt(temps[0]);
+            int lowTemp=Integer.parseInt(temps[1]);
+            double convertedLowTemp=(lowTemp*1.8)+32;
+            double convertedHighTemp=(highTemp*9/5)+32;
+//            Log.v("TEMP","metricLow: "+lowTemp+" imperialLow: "+convertedLowTemp+" metricHigh: "+
+//                    highTemp+" imperialHigh: "+convertedHighTemp);
+            DecimalFormat df = new DecimalFormat("##.00");
+            String convertedForecast = elements[0]+" - "+elements[1]+" - "+
+                    Double.toString(Double.parseDouble(df.format(convertedHighTemp)))+"/"+
+                    Double.toString(Double.parseDouble(df.format(convertedLowTemp)));
+//            Log.v("CONVERTED_STRING",convertedForecast);
+            return convertedForecast;
+        }
+
         @Override
         protected void onPostExecute(String[] strings) {
+            SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences((getActivity()));
+            String units = pref.getString(getString(R.string.pref_units_key),getString(R.string.pref_units_default));
+            //Log.v("UNIT_TYPE",units);  //02-25 12:34:06.101 4121-4121/? V/UNIT_TYPE: imperial
             if (strings != null) {
                 mForecastAdapter.clear();
-                for (String dayForecastStr : strings) {
-                    mForecastAdapter.add(dayForecastStr);
+                if (units.equals("imperial")){
+                    for (String dayForecastStr : strings) {
+                        String convertedDayForecastStr = this.convertMetricToImperial(dayForecastStr);
+                        mForecastAdapter.add(convertedDayForecastStr);
+                    }
                 }
-                // New data is back from the server.  Hooray!
+                else{
+                    for (String dayForecastStr : strings) {
+                        mForecastAdapter.add(dayForecastStr);
+                    }
+                }
             }
         }
     }
